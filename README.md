@@ -63,6 +63,8 @@ Open Tampermonkey → this script → **Settings**. Each vault is a slot (Port /
 
 Versions track the `@version` in the userscript header (newest first).
 
+- **v0.13.3** — Tag priority fix: prefer **frontmatter tags** over Local REST's top-level `tags` (which exposes inline `#tags` only); trim trailing ellipsis/punctuation.
+- **v0.13.2** — Pull tags from multiple sources (top-level `tags` → `frontmatter.tags` → inline) for Local REST plugin variants.
 - **v0.13.1** — Default theme set to **Ocean**; fixed "Note title color" not applying in Accent scope.
 - **v0.13.0** — Harmonious default vault colors (Main `#E39AAB` dusty rose / Wiki `#86C2A6` sage); header text/count/icons toned down to neutral white-gray (logo keeps the accent color).
 - **v0.12.1** — **`vaultColorScope`** (Accent / Full): Accent keeps titles readable and applies the vault color only to accents; Full colors titles + highlights too.

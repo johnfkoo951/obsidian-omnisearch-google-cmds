@@ -6,7 +6,7 @@
 // @updateURL    https://raw.githubusercontent.com/johnfkoo951/obsidian-omnisearch-google-cmds/main/obsidian-omnisearch-google-cmds.user.js
 // @homepageURL  https://github.com/johnfkoo951/obsidian-omnisearch-google-cmds
 // @supportURL   https://github.com/johnfkoo951/obsidian-omnisearch-google-cmds/issues
-// @version      0.13.1-custom
+// @version      0.13.3-custom
 // @description  Injects Obsidian Omnisearch results into Google — multi-vault via split per-vault settings (port/name/deeplink/color/root, no hardcoded paths), Advanced-URI option for reliable cross-vault open, per-vault card tint, relevance bars, tag/matched-term chips, copy name/rel/abs path, keyboard nav, themes.
 // @author       구요한 (CMDSPACE)
 // @contributor  Simon Cambier (original "Obsidian Omnisearch in Google" — https://github.com/scambier/userscripts)
@@ -190,7 +190,7 @@
             if (seen.has(k)) return;
             seen.add(k); out.push(t);
         };
-        (raw.match(/#[^\s#<>&,;\[\]"'*`]{2,30}/g) || []).forEach(add);            // inline #hashtags
+        (raw.match(/#[^\s#<>&,;\[\]"'*`…]{2,30}/g) || []).forEach(add);           // inline #hashtags
         (raw.match(/\[([^\[\]]*,[^\[\]]*)\]/g) || []).forEach((seg) =>            // [a, b, c] arrays
             seg.replace(/^\[|\]$/g, "").split(",").forEach(add));
         const tm = raw.match(/\btags\s*:\s*([^\n]{0,120})/i);                     // YAML "tags: a b c" run
@@ -255,6 +255,32 @@
         });
     }
 
+    // Pull tags from a Local REST note JSON. Order = curated first:
+    //   1) frontmatter.tags/tag (the vault's real, curated tags)
+    //   2) top-level `tags` (olrapi exposes INLINE #tags here, not frontmatter — noisier)
+    //   3) inline #tags extracted from the body (last resort)
+    function notesTags(note) {
+        const out = [];
+        const push = (v) => {
+            if (Array.isArray(v)) v.forEach(push);
+            else if (typeof v === "string") v.split(/[,\s]+/).forEach((s) => out.push(s));
+        };
+        const fm = note.frontmatter || note.properties || {};
+        push(fm.tags); push(fm.tag);                                  // 1) frontmatter (preferred)
+        if (!out.length && Array.isArray(note.tags)) push(note.tags); // 2) inline (olrapi top-level)
+        if (!out.length && note.content) extractTags(note.content).forEach((t) => out.push(t)); // 3) body
+        const seen = new Set(), res = [];
+        for (let t of out) {
+            t = String(t).replace(/^#+/, "").replace(/[…\s.,;:]+$/u, "").trim(); // drop trailing ellipsis/punct
+            if (!t || /^\d+$/.test(t)) continue;
+            const k = t.toLowerCase();
+            if (seen.has(k)) continue;
+            seen.add(k); res.push(t);
+        }
+        return res;
+    }
+
+    let _restShape = false; // log the note shape once, to help diagnose variants
     // After cards render, pull the real note (body + tags) for each visible result and patch it in.
     function enrichResults() {
         if (!S.useLocalRest) return;
@@ -267,9 +293,10 @@
             const card = cards.eq(i);
             fetchNote({ port: item._restPort, key: item._restKey }, item.path).then((note) => {
                 if (!note) return;
+                if (!_restShape) { _restShape = true; console.log("[Omnisearch CMDS] Local REST note keys:", Object.keys(note), "| tags:", note.tags, "| frontmatter.tags:", (note.frontmatter || {}).tags); }
                 if (note.content) card.find(".om-excerpt").html(bodyPreview(note.content, query));
-                if (S.showTags && Array.isArray(note.tags)) {
-                    const tags = note.tags.map((t) => String(t).replace(/^#/, "")).filter(Boolean).slice(0, S.maxTags);
+                if (S.showTags) {
+                    const tags = notesTags(note).slice(0, S.maxTags);
                     let box = card.find(".om-tags");
                     const html = tags.map((t) => `<span class="om-tag">${escapeHtml(t)}</span>`).join("");
                     if (tags.length) {
@@ -1072,7 +1099,7 @@
     }
 
     // ---------- boot ----------
-    console.log("Loading Omnisearch injector CMDS v0.13.1");
+    console.log("Loading Omnisearch injector CMDS v0.13.3");
 
     onInit(gmc).then(async () => {
         loadSettings();
@@ -1090,7 +1117,7 @@
         bindKeyboard();
         runSearch();
 
-        console.log("Loaded Omnisearch injector CMDS v0.13.1");
+        console.log("Loaded Omnisearch injector CMDS v0.13.3");
 
         // keep widget pinned to chosen edge if Google injects more cards
         waitForKeyElements(sidebarSelector, () => {
