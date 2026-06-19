@@ -27,6 +27,21 @@ The vault color (teal vs red) carries through the whole card — title dot, badg
 3. In Obsidian, install **Omnisearch** and enable its HTTP server (Settings → Omnisearch → "HTTP server").
 4. Search on Google → results appear in the right sidebar.
 
+## Chrome / Tampermonkey permissions
+
+On recent Chrome, userscripts won't run until you flip a couple of toggles. Open `chrome://extensions` → **Tampermonkey** → **Details**:
+
+![Tampermonkey extension details in Chrome: Site access "On all sites", "Allow User Scripts" on, "Allow access to file URLs" on.](images/tampermonkey-permissions.png)
+
+- **Allow User Scripts** → **ON** (required). Chrome 138+ gates userscript execution behind this toggle; if it's off, nothing appears.
+- **Site access** → **On all sites** (or at least allow `google.com`). The widget injects into Google's results page.
+- **Allow access to file URLs** → ON is fine (harmless here; this script talks to `http://localhost`, not `file://`).
+- **Allow in Incognito** → optional, only if you want it there too.
+
+**First search** also triggers a Tampermonkey cross-origin prompt for `localhost` / `127.0.0.1` (the local Omnisearch / Local REST API calls). Choose **Always allow domain**.
+
+> Firefox/Violentmonkey users: no "Allow User Scripts" toggle — just make sure the script is enabled and has access to `google.com`.
+
 ## Features
 - **Multi-vault** fan-out — query several open vaults at once (one Omnisearch HTTP port per vault), merged and sorted by relevance, with per-vault badges/colors.
 - **Relevance bars** (normalized BM25 score) + min-relevance filter, sort, type filters, in-widget refine.
